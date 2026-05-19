@@ -1,0 +1,45 @@
+{
+  "name": "super-app-sdk",
+  "version": "0.1.0",
+  "description": "Embeddable SDK for sharing data and events between a host React Native shell and embedded mini apps.",
+  "main": "src/index.ts",
+  "module": "src/index.ts",
+  "react-native": "src/index.ts",
+  "types": "src/index.ts",
+  "source": "src/index.ts",
+  "files": [
+    "src",
+    "android",
+    "ios",
+    "super-app-sdk.podspec",
+    "react-native.config.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc -p tsconfig.build.json",
+    "clean": "rimraf lib"
+  },
+  "keywords": [
+    "react-native",
+    "super-app",
+    "mini-app",
+    "sdk",
+    "bridge"
+  ],
+  "author": "TNG",
+  "license": "UNLICENSED",
+  "private": true,
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-native": ">=0.71.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.0",
+    "react": "19.2.3",
+    "react-native": "0.85.3",
+    "rimraf": "^5.0.5",
+    "typescript": "^5.8.3"
+  }
+}
