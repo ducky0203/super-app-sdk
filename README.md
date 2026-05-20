@@ -15,6 +15,10 @@ Package đã bundle sẵn **JS + native module `SuperAppBridge`** (Android Kotli
 - [Khởi động nhanh](#khởi-động-nhanh)
   - [Phía Host](#phía-host)
   - [Phía Mini app](#phía-mini-app)
+- [Đóng mini app](#đóng-mini-app)
+  - [Cách 1 — Mini app tự thông báo từ JS](#cách-1--mini-app-tự-thông-báo-từ-js)
+  - [Cách 2 — Host gọi từ native khi tear-down](#cách-2--host-gọi-từ-native-khi-tear-down)
+  - [Host lắng nghe & dọn dẹp](#host-lắng-nghe--dọn-dẹp)
 - [API tham chiếu](#api-tham-chiếu)
   - [Khởi tạo & kiểm tra](#khởi-tạo--kiểm-tra)
   - [Lưu trữ key/value](#lưu-trữ-keyvalue)
@@ -111,7 +115,7 @@ async function openMiniApp() {
     locale: 'vi-VN',
   });
 
-  // 3. Lắng nghe khi mini đóng
+  // 3. Lắng nghe khi mini đóng (xem chi tiết ở section "Đóng mini app")
   const sub = SuperAppSDK.onMiniAppClosed(({moduleName}) => {
     console.log('Mini đã đóng:', moduleName);
     sub.remove();
@@ -156,6 +160,123 @@ await SuperAppSDK.emitEvent('payment.done', {orderId: 'o1', amount: 50_000});
 
 // Đừng quên dọn dẹp khi unmount
 // dataSub.remove();
+```
+
+---
+
+## Đóng mini app
+
+Khi mini app đóng, hệ thống cần phát một event `miniapp.closed` để host biết mà:
+
+1. Dọn UI (pop navigation, ẩn loading overlay, refresh data…).
+2. Reset role về `'host'` (`SuperAppSDK.onMiniClosed()`).
+3. Cleanup data cho mini đó nếu cần (`SuperAppSDK.remove('user')`, `SuperAppSDK.clear()`…).
+
+SDK hỗ trợ **2 cách** phát event này. Chọn 1 hoặc kết hợp tuỳ flow.
+
+### Cách 1 — Mini app tự thông báo từ JS
+
+Dùng khi mini app **chủ động** đóng (user bấm nút "Thoát" trong mini app).
+
+**Mini app:**
+
+```ts
+import SuperAppSDK from 'super-app-sdk';
+import {BackHandler} from 'react-native';
+
+async function exitMiniApp() {
+  // Báo cho host trước khi mini app unmount
+  await SuperAppSDK.emitMiniAppClosed('walletMini');
+
+  // Sau đó tuỳ cách mini được mở mà đóng (vd: pop navigation, finish Activity, …)
+  BackHandler.exitApp(); // chỉ là ví dụ
+}
+```
+
+`emitMiniAppClosed(moduleName?)` thực chất là helper của `emitEvent('miniapp.closed', {moduleName})` — payload `{moduleName}` giúp host phân biệt mini nào vừa đóng (nếu super app có nhiều mini).
+
+### Cách 2 — Host gọi từ native khi tear-down
+
+Dùng khi mini app **không kịp** chạy JS để báo (user kill bằng nút back hệ thống, Activity bị destroy, ViewController bị dismiss từ host…). Gọi trực tiếp từ native ngay tại điểm tear-down.
+
+**Android (Kotlin)** — vd trong `MiniAppActivity.onDestroy()`:
+
+```kotlin
+import vn.tng.superappsdk.SuperAppDataStore
+
+class MiniAppActivity : ReactActivity() {
+  override fun onDestroy() {
+    SuperAppDataStore.notifyMiniAppClosed("walletMini")
+    super.onDestroy()
+  }
+}
+```
+
+Hoặc gọi từ `MainActivity` khi pop fragment / dismiss dialog chứa mini bundle:
+
+```kotlin
+SuperAppDataStore.notifyMiniAppClosed("walletMini")
+```
+
+**iOS (Obj-C / Swift)** — vd trong host code dismiss mini view controller:
+
+```objc
+#import "SuperAppDataStore.h"
+
+- (void)dismissMiniApp {
+  [[SuperAppDataStore shared] notifyMiniAppClosed:@"walletMini"];
+  [self dismissViewControllerAnimated:YES completion:nil];
+}
+```
+
+```swift
+// Swift bridging
+SuperAppDataStore.shared().notifyMiniAppClosed("walletMini")
+```
+
+Hàm này phát event tới **tất cả React runtime** đang attach (gồm host JS) — không cần JS mini app còn sống.
+
+### Host lắng nghe & dọn dẹp
+
+Bất kể event phát từ Cách 1 hay Cách 2, host JS lắng nghe bằng `onMiniAppClosed`:
+
+```ts
+import {useEffect} from 'react';
+import SuperAppSDK from 'super-app-sdk';
+
+function SuperAppShell() {
+  useEffect(() => {
+    const sub = SuperAppSDK.onMiniAppClosed(async ({moduleName}) => {
+      console.log('[host] mini đóng:', moduleName);
+
+      // 1. Reset role về 'host'
+      await SuperAppSDK.onMiniClosed();
+
+      // 2. (Tuỳ chọn) cleanup data của mini này
+      await SuperAppSDK.remove('user');
+      // await SuperAppSDK.clear();
+
+      // 3. Refresh UI host (vd: pop navigation, reload list, …)
+    });
+
+    return () => sub.remove();
+  }, []);
+
+  return /* … */;
+}
+```
+
+> **Lưu ý**: `SuperAppSDK.onMiniClosed()` chỉ là setter (set role về `'host'`), **không** phải listener. Đừng nhầm với `onMiniAppClosed(cb)` — đây mới là hàm subscribe.
+
+**Flow tóm tắt:**
+
+```
+┌─────────────┐   emitMiniAppClosed / notifyMiniAppClosed   ┌──────────────┐
+│  Mini app   │ ──────────────────────────────────────────► │ Host JS      │
+│ (JS hoặc   │                                              │ onMiniAppClosed
+│  native)    │                                              │   → onMiniClosed
+└─────────────┘                                              │   → cleanup  │
+                                                             └──────────────┘
 ```
 
 ---
@@ -313,6 +434,12 @@ cd ios && rm -rf Pods build && pod install && cd ..
 
 - Host có gọi `prepareMiniLaunch` / `set` **trước khi** mini app mount không?
 - Nếu mini đã mount rồi mới ghi, dùng `onDataChanged` để nghe update thay vì gọi `get` một lần.
+
+### Host không nhận được event đóng mini app
+
+- Bạn có gọi `emitMiniAppClosed` (JS) **hoặc** `SuperAppDataStore.notifyMiniAppClosed` (native) lúc mini tear-down chưa? Xem [Đóng mini app](#đóng-mini-app).
+- Subscription `onMiniAppClosed` có được tạo **trước** khi mini đóng không? Nếu tạo trong cùng frame mini bị destroy, event có thể bắn trước listener.
+- Kiểm tra phát đúng event name `miniapp.closed` — nếu tự `emitEvent` thì dùng hằng `MINI_APP_CLOSED_EVENT` để đỡ typo.
 
 ---
 
