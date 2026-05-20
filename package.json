@@ -1,6 +1,6 @@
 {
   "name": "super-app-sdk",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Embeddable SDK for sharing data and events between a host React Native shell and embedded mini apps.",
   "main": "src/index.ts",
   "module": "src/index.ts",

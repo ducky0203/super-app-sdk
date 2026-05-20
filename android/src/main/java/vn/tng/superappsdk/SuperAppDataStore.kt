@@ -15,6 +15,9 @@ object SuperAppDataStore {
   const val EVENT_DATA_CHANGED = "SuperAppDataChanged"
   const val EVENT_BRIDGE = "SuperAppEvent"
 
+  /** Tên event mà SDK phát khi mini app đóng — JS lắng nghe qua `SuperAppSDK.onMiniAppClosed`. */
+  const val EVENT_NAME_MINI_APP_CLOSED = "miniapp.closed"
+
   private val data = ConcurrentHashMap<String, String>()
   private val contexts = ConcurrentHashMap.newKeySet<WeakReference<ReactApplicationContext>>()
 
@@ -68,6 +71,28 @@ object SuperAppDataStore {
           }
         }
     emitToAll(EVENT_BRIDGE, params)
+  }
+
+  /**
+   * Host shell gọi khi mini app đóng. Phát [EVENT_NAME_MINI_APP_CLOSED] tới mọi React context
+   * còn sống (thường là host JS), payload `{"moduleName":"..."}`.
+   */
+  @JvmStatic
+  @JvmOverloads
+  fun notifyMiniAppClosed(moduleName: String? = null) {
+    val payload = moduleName?.let { "{\"moduleName\":${jsonString(it)}}" }
+    emitBridgeEvent(EVENT_NAME_MINI_APP_CLOSED, payload)
+  }
+
+  private fun jsonString(value: String): String {
+    val escaped =
+        value
+            .replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+            .replace("\n", "\\n")
+            .replace("\r", "\\r")
+            .replace("\t", "\\t")
+    return "\"$escaped\""
   }
 
   private fun emitDataChanged(key: String?, value: String?) {

@@ -3,6 +3,7 @@
 NSString *const SuperAppDataChangedEvent = @"SuperAppDataChanged";
 NSString *const SuperAppBridgeEvent = @"SuperAppEvent";
 NSString *const SuperAppRoleKey = @"__super_app_role__";
+NSString *const SuperAppMiniAppClosedEventName = @"miniapp.closed";
 
 @interface SuperAppDataStore ()
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSString *> *data;
@@ -97,6 +98,20 @@ NSString *const SuperAppRoleKey = @"__super_app_role__";
     body[@"payload"] = payloadJson;
   }
   [[NSNotificationCenter defaultCenter] postNotificationName:SuperAppBridgeEvent object:nil userInfo:body];
+}
+
+- (void)notifyMiniAppClosed:(NSString *)moduleName
+{
+  NSString *payloadJson = nil;
+  if (moduleName.length > 0) {
+    NSDictionary *payload = @{@"moduleName" : moduleName};
+    NSError *error = nil;
+    NSData *data = [NSJSONSerialization dataWithJSONObject:payload options:0 error:&error];
+    if (data != nil && error == nil) {
+      payloadJson = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+    }
+  }
+  [self emitBridgeEventWithName:SuperAppMiniAppClosedEventName payloadJson:payloadJson];
 }
 
 - (void)postDataChangedWithKey:(NSString *)key value:(NSString *)value
