@@ -1,4 +1,4 @@
-# super-app-sdk
+# @ducky0203/super-app-sdk
 
 Thư viện chia sẻ **dữ liệu** và **sự kiện** giữa **host app** (super app shell) và **mini app** chạy nhúng cùng process — mỗi bên một React Native runtime.
 
@@ -62,7 +62,7 @@ npm install file:../super-app-sdk
 ```json
 {
   "dependencies": {
-    "super-app-sdk": "file:../super-app-sdk"
+    "@ducky0203/super-app-sdk": "file:../super-app-sdk"
   }
 }
 ```
@@ -90,7 +90,7 @@ yarn android
 
 ### 4. Mini app
 
-Mini app bundle **chỉ cần** thêm `super-app-sdk` vào `dependencies` rồi `import` — không cần pod install / gradle sync vì native đã có sẵn trong host.
+Mini app bundle **chỉ cần** thêm `@ducky0203/super-app-sdk` vào `dependencies` rồi `import` — không cần pod install / gradle sync vì native đã có sẵn trong host.
 
 ---
 
@@ -99,7 +99,7 @@ Mini app bundle **chỉ cần** thêm `super-app-sdk` vào `dependencies` rồi 
 ### Phía Host
 
 ```ts
-import SuperAppSDK from 'super-app-sdk';
+import SuperAppSDK from '@ducky0203/super-app-sdk';
 
 async function openMiniApp() {
   // 1. (Tuỳ chọn) kiểm tra bridge có sẵn
@@ -137,7 +137,7 @@ SuperAppSDK.onEvent(({eventName, payload}) => {
 ### Phía Mini app
 
 ```ts
-import SuperAppSDK from 'super-app-sdk';
+import SuperAppSDK from '@ducky0203/super-app-sdk';
 
 async function bootstrap() {
   const role = await SuperAppSDK.getRole();        // → 'mini'
@@ -181,7 +181,7 @@ Dùng khi mini app **chủ động** đóng (user bấm nút "Thoát" trong mini
 **Mini app:**
 
 ```ts
-import SuperAppSDK from 'super-app-sdk';
+import SuperAppSDK from '@ducky0203/super-app-sdk';
 import {BackHandler} from 'react-native';
 
 async function exitMiniApp() {
@@ -242,7 +242,7 @@ Bất kể event phát từ Cách 1 hay Cách 2, host JS lắng nghe bằng `onM
 
 ```ts
 import {useEffect} from 'react';
-import SuperAppSDK from 'super-app-sdk';
+import SuperAppSDK from '@ducky0203/super-app-sdk';
 
 function SuperAppShell() {
   useEffect(() => {
@@ -286,9 +286,9 @@ function SuperAppShell() {
 Tất cả method bất đồng bộ trả về `Promise`. Import như sau:
 
 ```ts
-import SuperAppSDK from 'super-app-sdk';
+import SuperAppSDK from '@ducky0203/super-app-sdk';
 // hoặc named:
-import {SuperAppSDK, MINI_APP_CLOSED_EVENT} from 'super-app-sdk';
+import {SuperAppSDK, MINI_APP_CLOSED_EVENT} from '@ducky0203/super-app-sdk';
 ```
 
 ### Khởi tạo & kiểm tra
@@ -354,7 +354,7 @@ SDK đã bundle sẵn native code, autolink tự chạy:
 
 Host shell **không cần** sửa `MainApplication`, `AppDelegate`, hay khai báo `ReactPackage`. Nếu trước đây bạn đã copy thủ công các file `SuperAppBridge*` / `SuperAppDataStore*` vào project (vd: trong `com.officeapp.superapp` hay `ios/OfficeApp/`), **xoá hết** để tránh trùng native module — React Native sẽ throw `Native module SuperAppBridge tried to override...` nếu còn cả hai.
 
-Mini app bundle chỉ cần import `super-app-sdk` là dùng được — không cần link native riêng vì host đã có.
+Mini app bundle chỉ cần import `@ducky0203/super-app-sdk` là dùng được — không cần link native riêng vì host đã có.
 
 ---
 
@@ -426,7 +426,7 @@ cd ios && rm -rf Pods build && pod install && cd ..
 
 ### Event listener không bắn
 
-- Đảm bảo bạn dùng cùng một instance `SuperAppSDK` từ package `super-app-sdk` (không phải copy file).
+- Đảm bảo bạn dùng cùng một instance `SuperAppSDK` từ package `@ducky0203/super-app-sdk` (không phải copy file).
 - `onEvent` chỉ nhận event được phát qua `emitEvent` (cross-runtime). Event nội bộ runtime của bạn không đi qua bridge.
 - Nhớ giữ `subscription` (vd lưu trong ref) để không bị GC.
 
