@@ -11,9 +11,3 @@ export type SuperAppBridgeEventPayload = {
 };
 
 export type SuperAppDataMap = Record<string, string>;
-
-export type MiniAppClosedPayload = {
-  moduleName?: string;
-};
-
-export const MINI_APP_CLOSED_EVENT = 'miniapp.closed';

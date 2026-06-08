@@ -6,8 +6,6 @@ import {
   ROLE_KEY,
 } from './native';
 import {
-  MINI_APP_CLOSED_EVENT,
-  type MiniAppClosedPayload,
   type SuperAppBridgeEventPayload,
   type SuperAppDataChangedPayload,
   type SuperAppDataMap,
@@ -103,11 +101,6 @@ export const SuperAppSDK = {
     );
   },
 
-  /** Host sau khi đóng mini */
-  async onMiniClosed(): Promise<void> {
-    await this.setRole('host');
-  },
-
   onDataChanged(
     listener: (payload: SuperAppDataChangedPayload) => void,
   ): EmitterSubscription {
@@ -127,49 +120,16 @@ export const SuperAppSDK = {
     await getNativeBridge().emitEvent(eventName, json);
   },
 
-  /**
-   * Phát event "mini app đã đóng" — thường được gọi từ native (`SuperAppDataStore.notifyMiniAppClosed`).
-   * Có thể gọi từ JS để test.
-   */
-  async emitMiniAppClosed(moduleName?: string): Promise<void> {
-    await this.emitEvent(
-      MINI_APP_CLOSED_EVENT,
-      moduleName ? {moduleName} : undefined,
-    );
-  },
-
-  /**
-   * Host shell lắng nghe mini app đóng.
-   *
-   * @example
-   * const sub = SuperAppSDK.onMiniAppClosed(({moduleName}) => {
-   *   console.log('mini đóng:', moduleName);
-   * });
-   * sub.remove();
-   */
-  onMiniAppClosed(
-    listener: (payload: MiniAppClosedPayload) => void,
-  ): EmitterSubscription {
-    return this.onEvent(({eventName, payload}) => {
-      if (eventName !== MINI_APP_CLOSED_EVENT) {
-        return;
-      }
-      const parsed = payload ? deserialize<MiniAppClosedPayload>(payload) : null;
-      listener(parsed ?? {});
-    });
-  },
 };
 
 export default SuperAppSDK;
 
 export type {
-  MiniAppClosedPayload,
   SuperAppBridgeEventPayload,
   SuperAppDataChangedPayload,
   SuperAppDataMap,
   SuperAppRole,
 } from './types';
-export {MINI_APP_CLOSED_EVENT} from './types';
 
 export {getNativeBridge, isBridgeAvailable, ROLE_KEY} from './native';
 export type {SuperAppBridgeNative} from './native';
